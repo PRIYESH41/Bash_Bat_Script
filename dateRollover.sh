@@ -4,10 +4,12 @@
 
 filePath="data/file/DFLAG"
 
-
+#------------------------------------------------------------------------------------------------------------  
 #Function defination 
+#------------------------------------------------------------------------------------------------------------  
+
+#Loading Animation Function
 loading(){
-	echo -e -n "\033[1;36mChanging DFLAG"
 	for i in `seq 1 10`
 	do
 		echo -n '.'
@@ -16,56 +18,93 @@ loading(){
 	echo -e "\033[1;0m";
 }
 
+#Declare post script here 
 postJob(){
   echo "Executing Post job";
   echo "Post job Execution done";
 }
 
 
+#Function to change font color
+color(){
+
+case $1 in 
+  BLACK|B)
+    tput setaf 0 ;;
+  RED|R)
+    tput setaf 1 ;;
+  GREEN|G)
+    tput setaf 2 ;;
+  YELLOW|Y)
+    tput setaf 3 ;;
+  BLUE|BL)
+    tput setaf 4 ;;
+  VIOLET|V)
+    tput setaf 5 ;;
+  LIGHTBLUE|LB)
+    tput setaf 6 ;;
+  WHITE|W)
+    tput setaf 7 ;;
+  *)
+   echo "Usage $0 {B|G|Y|BL|V|LB|W}"
+   exit 1 ;;
+esac
+}
+
+
+#------------------------------------------------------------------------------------------------------------  
 #Main Execution start here
-od="20230707"
-pd=`cat $filePath | cut -b 9-16`
+#------------------------------------------------------------------------------------------------------------  
+previousdate=""
+presentDate=`cat $filePath | cut -b 9-16`
 
-echo "presentdate is $pd";
-echo "previousdate was $od";
-echo -e "\033[1;36mEnter New Date, Format (YYYYMMDD):\033[1;0m";
-read nd;
+color W;
+echo "****************************************"
+echo "presentdate is   - $presentDate";
+echo "previousdate was - $previousdate";
+echo -n "DFLAG Value      - ";cat $filePath;
+echo "****************************************"
 
-##Validatotion
-dw=$(( $(echo $nd | wc -c) - 1))
-if [ -z $nd ] | [ $dw -ne 8 ]
-then
-	echo -e "\033[1;31mEnter date is Wrong\033[1;0mHHHHH"; exit;
+color LB;echo "Enter New Date, Format (YYYYMMDD): ";color W;
+
+read nextDate;
+
+#Validate Date length and 
+if ! date -d $nextDate  +"%Y%m%d" >/dev/null 2>&1 || [[ ${#nextDate} -ne 8 ]]; then
+  color R; echo -e "Enter date is Wrong";exit
 fi
-echo -n "DFLAG Value :   ";cat $filePath;
+
 
 #Loading animation
+color LB;echo -n "Changing DFLAG";
 loading
+color W;
 
-sleep 1
-sed -i s/$pd/$nd/g $filePath
+sed -i s/$presentDate/$nextDate/g $filePath
 echo -n "DFLAG Value :   ";cat $filePath
-echo -e "\033[1:36m
+color LB
+echo -e "
 Y : EXECUTE_JOB 
 N : NOT EXECUTE JOB and EXIT 
 R : REVERT DATE TO PREVIOUS DATE 
-\033[1;0m"
+"
+color W
 
 read FLAG
-if [[ $FLAG == 'Y' ]];
-then
-	sed -i "s/$od/$pd/g" $0
-	postJob #Execute post job
-	echo -e "\033[1;32mDATE ROLLOVER COMPLETE \033[1;0m\n"
-elif [[ $FLAG == 'R' ]];
-then
-	echo "Reverting DFLAG to PrevDt"
 
-	sed -i s/$nd/$pd/g $filePath
-	echo -n "DFLAG Value :   "; cat $filePath
-else
-	echo -e "\033[1;32m DFLAG Changed $nd \033[1;0m"
-	sed -i "s/$od/$pd/g" $0
-fi
-
-exit 0;
+case $FLAG in 
+Y) 
+  sed -i s/$previousdate/$presentDate/g $0
+  postJob #Execute post job
+  color G;echo -e "DATE ROLLOVER COMPLETE\n";color W;
+;;
+R)
+  color LB;echo "Reverting DFLAG to PrevDt"
+  sed -i s/$nextDate/$presentDate/g $filePath
+  color W;echo -n "DFLAG Value :   "; cat $filePath
+;;
+N|*)
+  color G;echo -e "DFLAG Changed $nextDate\n";color W
+  sed -i "s/$previousdate/$pd/g" $0
+;;
+esac
